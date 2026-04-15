@@ -1,0 +1,44 @@
+######################################################################
+# FadilJaya.NET — policy.d/fadiljaya
+# Custom policies untuk WiFi management system
+######################################################################
+
+#
+# check_quota — dipanggil dari authorize untuk cek kuota user.
+# Kuota sebenarnya di-enforce oleh Next.js + MikroTik API,
+# tapi kita bisa memakai attribute Mikrotik-Rate-Limit dari radreply.
+#
+policy check_quota {
+    if (&reply:Mikrotik-Rate-Limit) {
+        noop
+    }
+}
+
+#
+# simultaneous_use_reject — pesan reject yang jelas ke user
+#
+policy simultaneous_use_reject {
+    update reply {
+        Reply-Message := "Akun sedang digunakan di perangkat lain. Logout terlebih dahulu."
+    }
+    reject
+}
+
+#
+# filter_username — reject username yang tidak valid
+#
+policy filter_username {
+    if (&User-Name == "") {
+        update reply {
+            Reply-Message := "Username tidak boleh kosong"
+        }
+        reject
+    }
+
+    if (&User-Name =~ /[ \t\n\r\f\v]/) {
+        update reply {
+            Reply-Message := "Username mengandung karakter tidak valid"
+        }
+        reject
+    }
+}

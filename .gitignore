@@ -39,3 +39,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nginx ssl certs (issued by certbot on vps)
+nginx/certs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# freeradius local secrets
+freeradius/config/clients.conf
+
+/src/generated/prisma

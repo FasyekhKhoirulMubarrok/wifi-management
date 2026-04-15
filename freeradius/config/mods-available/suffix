@@ -1,0 +1,7 @@
+# suffix — strip realm suffix from username (e.g., user@realm → user)
+realm suffix {
+    format        = suffix
+    delimiter     = "@"
+    ignore_default = no
+    ignore_null   = no
+}

@@ -1,0 +1,335 @@
+// FadilJaya.NET — WiFi Management System
+// Prisma Schema — MySQL 8
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "foreignKeys"
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum AdminRole {
+  super_admin
+  admin_lokasi
+}
+
+enum PackageType {
+  voucher
+  langganan
+}
+
+enum VoucherStatus {
+  unused
+  active
+  expired
+}
+
+enum SubscriberStatus {
+  active
+  expired
+  blocked
+}
+
+enum SessionUserType {
+  admin
+  subscriber
+  voucher
+}
+
+enum PushUserType {
+  admin
+  user
+}
+
+enum MacRuleType {
+  whitelist
+  blacklist
+}
+
+enum SessionLogUserType {
+  subscriber
+  voucher
+}
+
+// ─────────────────────────────────────────────
+// ADMIN & LOKASI
+// ─────────────────────────────────────────────
+
+model Admin {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(100)
+  email     String    @unique @db.VarChar(100)
+  password  String    @db.VarChar(255)
+  role      AdminRole
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  locations AdminLocation[]
+  logs      AdminLog[]
+  vouchers  Voucher[]       @relation("VoucherCreatedBy")
+  subscribers Subscriber[]  @relation("SubscriberCreatedBy")
+  macRules  MacRule[]       @relation("MacRuleCreatedBy")
+
+  @@map("admins")
+}
+
+model AdminLocation {
+  adminId    Int @map("admin_id")
+  locationId Int @map("location_id")
+
+  admin    Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@id([adminId, locationId])
+  @@map("admin_locations")
+}
+
+model Location {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  address      String?  @db.Text
+  mikrotikIp   String   @map("mikrotik_ip") @db.VarChar(15)
+  mikrotikUser String   @map("mikrotik_user") @db.VarChar(50)
+  mikrotikPass String   @map("mikrotik_pass") @db.VarChar(100)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  admins        AdminLocation[]
+  packages      Package[]
+  vouchers      Voucher[]
+  subscribers   Subscriber[]
+  trialSessions TrialSession[]
+  trialConfig   TrialConfig?
+  advertisements Advertisement[]
+  macRules      MacRule[]
+  sessionLogs   SessionLog[]
+
+  @@map("locations")
+}
+
+// ─────────────────────────────────────────────
+// PAKET
+// ─────────────────────────────────────────────
+
+model Package {
+  id             Int         @id @default(autoincrement())
+  name           String      @db.VarChar(100)
+  price          Decimal     @db.Decimal(10, 2)
+  quotaLimitMb   BigInt?     @map("quota_limit_mb")   // NULL = unlimited
+  timeLimitDays  Int?        @map("time_limit_days")  // NULL = unlimited
+  speedDownKbps  Int         @map("speed_down_kbps")
+  speedUpKbps    Int         @map("speed_up_kbps")
+  throttleKbps   Int         @default(512) @map("throttle_kbps")
+  type           PackageType
+  locationId     Int?        @map("location_id")      // NULL = semua lokasi
+  isActive       Boolean     @default(true) @map("is_active")
+  scheduleStart  DateTime?   @map("schedule_start") @db.Time
+  scheduleEnd    DateTime?   @map("schedule_end") @db.Time
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  location    Location?    @relation(fields: [locationId], references: [id])
+  vouchers    Voucher[]
+  subscribers Subscriber[]
+
+  @@map("packages")
+}
+
+// ─────────────────────────────────────────────
+// VOUCHER
+// ─────────────────────────────────────────────
+
+model Voucher {
+  id          Int           @id @default(autoincrement())
+  code        String        @unique @db.VarChar(20)  // format: XXXX-XXXX-XXXX
+  packageId   Int           @map("package_id")
+  locationId  Int?          @map("location_id")
+  status      VoucherStatus @default(unused)
+  usedByMac   String?       @map("used_by_mac") @db.VarChar(17)
+  usedAt      DateTime?     @map("used_at")
+  expiredAt   DateTime?     @map("expired_at")
+  quotaUsedMb BigInt        @default(0) @map("quota_used_mb")
+  createdBy   Int           @map("created_by")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  package  Package   @relation(fields: [packageId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+  creator  Admin     @relation("VoucherCreatedBy", fields: [createdBy], references: [id])
+
+  @@map("vouchers")
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIBER (user langganan)
+// ─────────────────────────────────────────────
+
+model Subscriber {
+  id          Int              @id @default(autoincrement())
+  username    String           @unique @db.VarChar(64)
+  password    String           @db.VarChar(255)
+  name        String?          @db.VarChar(100)
+  packageId   Int              @map("package_id")
+  locationId  Int              @map("location_id")
+  quotaUsedMb BigInt           @default(0) @map("quota_used_mb")
+  status      SubscriberStatus @default(active)
+  activatedAt DateTime         @default(now()) @map("activated_at")
+  expiredAt   DateTime?        @map("expired_at")
+  createdBy   Int              @map("created_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  package  Package  @relation(fields: [packageId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+  creator  Admin    @relation("SubscriberCreatedBy", fields: [createdBy], references: [id])
+
+  @@map("subscribers")
+}
+
+// ─────────────────────────────────────────────
+// SESSIONS
+// ─────────────────────────────────────────────
+
+model Session {
+  id         String          @id @db.VarChar(64)
+  userType   SessionUserType @map("user_type")
+  userId     String          @map("user_id") @db.VarChar(64)
+  token      String          @db.VarChar(512)
+  macAddress String?         @map("mac_address") @db.VarChar(17)
+  ipAddress  String?         @map("ip_address") @db.VarChar(15)
+  isActive   Boolean         @default(true) @map("is_active")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  expiredAt  DateTime        @map("expired_at")
+
+  @@index([token], name: "idx_token")
+  @@index([userType, userId], name: "idx_user")
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────────
+// TRIAL
+// ─────────────────────────────────────────────
+
+model TrialSession {
+  id         Int      @id @default(autoincrement())
+  macAddress String   @map("mac_address") @db.VarChar(17)
+  locationId Int      @map("location_id")
+  usedAt     DateTime @map("used_at")
+  expiredAt  DateTime @map("expired_at")
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@index([macAddress, usedAt], name: "idx_mac_date")
+  @@map("trial_sessions")
+}
+
+model TrialConfig {
+  locationId       Int     @id @map("location_id")
+  durationMinutes  Int     @default(5) @map("duration_minutes")
+  speedKbps        Int     @default(1024) @map("speed_kbps")
+  isActive         Boolean @default(true) @map("is_active")
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@map("trial_config")
+}
+
+// ─────────────────────────────────────────────
+// WEB PUSH
+// ─────────────────────────────────────────────
+
+model PushSubscription {
+  id        Int          @id @default(autoincrement())
+  userType  PushUserType @map("user_type")
+  userId    String       @map("user_id") @db.VarChar(64)
+  endpoint  String       @db.Text
+  p256dh    String       @db.Text
+  auth      String       @db.Text
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@map("push_subscriptions")
+}
+
+// ─────────────────────────────────────────────
+// IKLAN
+// ─────────────────────────────────────────────
+
+model Advertisement {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(100)
+  description String?   @db.VarChar(255)
+  imageUrl    String?   @map("image_url") @db.VarChar(255)
+  linkUrl     String?   @map("link_url") @db.VarChar(255)
+  locationId  Int?      @map("location_id")  // NULL = semua lokasi
+  priority    Int       @default(0)
+  isActive    Boolean   @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  location Location? @relation(fields: [locationId], references: [id])
+
+  @@map("advertisements")
+}
+
+// ─────────────────────────────────────────────
+// MAC RULES
+// ─────────────────────────────────────────────
+
+model MacRule {
+  id         Int         @id @default(autoincrement())
+  macAddress String      @map("mac_address") @db.VarChar(17)
+  type       MacRuleType
+  locationId Int?        @map("location_id")  // NULL = semua lokasi
+  note       String?     @db.VarChar(255)
+  createdBy  Int         @map("created_by")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  location Location? @relation(fields: [locationId], references: [id])
+  creator  Admin     @relation("MacRuleCreatedBy", fields: [createdBy], references: [id])
+
+  @@unique([macAddress, locationId, type], name: "unique_mac_location")
+  @@map("mac_rules")
+}
+
+// ─────────────────────────────────────────────
+// LOGS
+// ─────────────────────────────────────────────
+
+model AdminLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int      @map("admin_id")
+  action      String   @db.VarChar(100)
+  description String?  @db.Text
+  ipAddress   String?  @map("ip_address") @db.VarChar(15)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  @@map("admin_logs")
+}
+
+model SessionLog {
+  id             Int                @id @default(autoincrement())
+  userType       SessionLogUserType @map("user_type")
+  username       String             @db.VarChar(64)
+  macAddress     String?            @map("mac_address") @db.VarChar(17)
+  ipAddress      String?            @map("ip_address") @db.VarChar(15)
+  locationId     Int                @map("location_id")
+  dataUsedMb     BigInt             @default(0) @map("data_used_mb")
+  durationSecs   Int                @default(0) @map("duration_secs")
+  loginAt        DateTime           @map("login_at")
+  logoutAt       DateTime?          @map("logout_at")
+  terminateCause String?            @map("terminate_cause") @db.VarChar(50)
+
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@map("session_logs")
+}

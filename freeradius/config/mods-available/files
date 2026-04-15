@@ -1,0 +1,6 @@
+# files — static user/group files (fallback, mostly unused with SQL)
+files {
+    filename    = ${confdir}/users
+    usersfile   = ${confdir}/users
+    acctusersfile = ${confdir}/acct_users
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls D:/wifi-management/src/generated/prisma/*.d.ts)",
+      "Bash(node:*)",
+      "Bash(timeout 12 npm run dev)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(echo \"EXIT:$?\")"
+    ]
+  }
+}

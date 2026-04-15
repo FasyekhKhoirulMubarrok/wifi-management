@@ -1,0 +1,4 @@
+# expiration — reject users with an Expiration attribute in the past
+expiration {
+    reply-message = "Password Has Expired"
+}

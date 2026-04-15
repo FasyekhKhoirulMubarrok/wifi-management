@@ -1,0 +1,5 @@
+# logintime — restrict logins to certain times of day
+logintime {
+    reply-message = "You are calling outside your allowed timespan"
+    minimum_timeout = 60
+}

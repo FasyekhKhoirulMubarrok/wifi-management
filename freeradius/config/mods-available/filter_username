@@ -1,0 +1,14 @@
+# filter_username — reject invalid usernames early
+filter_username {
+    # Reject empty usernames
+    if (&User-Name == "") {
+        reject
+    }
+    # Reject usernames with leading/trailing spaces
+    if (&User-Name =~ / $/) {
+        reject
+    }
+    if (&User-Name =~ /^ /) {
+        reject
+    }
+}

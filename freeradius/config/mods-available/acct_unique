@@ -1,0 +1,4 @@
+# acct_unique — generate unique accounting session ID
+acct_unique {
+    key = "Acct-Session-Id, NAS-IP-Address, NAS-Identifier, NAS-Port, Client-IP-Address"
+}

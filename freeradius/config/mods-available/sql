@@ -1,0 +1,74 @@
+# FadilJaya.NET — rlm_sql MySQL module
+# Connects FreeRADIUS to the shared fadiljaya_net MySQL database.
+
+sql {
+    # MySQL dialect & driver
+    dialect  = "mysql"
+    driver   = "rlm_sql_${dialect}"
+
+    # Connection — "mysql" is the Docker service name (internal DNS)
+    server   = "mysql"
+    port     = 3306
+    login    = "${MYSQL_USER}"
+    password = "${MYSQL_PASSWORD}"
+
+    radius_db = "fadiljaya_net"
+
+    # If true, (re)connect to the database before each query.
+    # Keep false for connection pooling.
+    open_query = "SET NAMES utf8mb4"
+
+    # ──────────────────────────────────────────────
+    # Standard FreeRADIUS table names
+    # ──────────────────────────────────────────────
+    authcheck_table   = "radcheck"
+    authreply_table   = "radreply"
+    groupcheck_table  = "radgroupcheck"
+    groupreply_table  = "radgroupreply"
+    usergroup_table   = "radusergroup"
+
+    # Both start and stop records go into the same table
+    acct_table1 = "radacct"
+    acct_table2 = "radacct"
+
+    # ──────────────────────────────────────────────
+    # Queries — use the default mods-config/sql/main/mysql/queries.conf
+    # ──────────────────────────────────────────────
+    $INCLUDE ${modconfdir}/sql/main/${dialect}/queries.conf
+
+    # ──────────────────────────────────────────────
+    # Connection pool
+    # ──────────────────────────────────────────────
+    pool {
+        start       = ${thread[pool].start_servers}
+        min         = ${thread[pool].min_spare_servers}
+        max         = ${thread[pool].max_servers}
+        spare       = ${thread[pool].max_spare_servers}
+        uses        = 0
+        retry_delay = 30
+        lifetime    = 0
+        idle_timeout = 60
+    }
+
+    # ──────────────────────────────────────────────
+    # Read groups
+    # ──────────────────────────────────────────────
+    read_groups = yes
+    read_profiles = no
+
+    # ──────────────────────────────────────────────
+    # Simultaneous-Use check via database
+    # ──────────────────────────────────────────────
+    # Tracked in radacct — checked during authorize
+    simul_count_query = "\
+        SELECT COUNT(*) \
+        FROM ${acct_table1} \
+        WHERE username = '%{SQL-User-Name}' \
+        AND acctstoptime IS NULL"
+
+    simul_verify_query = "\
+        SELECT radacctid, acctsessionid, username, nasipaddress, nasportid, framedipaddress \
+        FROM ${acct_table1} \
+        WHERE username = '%{SQL-User-Name}' \
+        AND acctstoptime IS NULL"
+}

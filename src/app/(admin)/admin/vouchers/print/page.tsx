@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Printer, RefreshCw, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +33,7 @@ function fmtSpeed(kbps: number) {
   return kbps >= 1024 ? `${(kbps / 1024).toFixed(0)} Mbps` : `${kbps} Kbps`;
 }
 
-export default function VoucherPrintPage() {
+function VoucherPrintContent() {
   const searchParams = useSearchParams();
   const ids          = searchParams.get("ids") ?? "";
 
@@ -123,6 +123,14 @@ export default function VoucherPrintPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function VoucherPrintPage() {
+  return (
+    <Suspense>
+      <VoucherPrintContent />
+    </Suspense>
   );
 }
 

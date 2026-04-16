@@ -5,7 +5,7 @@
 ##############################################################################
 set -e
 
-CONFDIR="/etc/freeradius/3.0"
+CONFDIR="/etc/freeradius"
 
 # ──────────────────────────────────────────────────────────────────
 # Substitusi environment variable di clients.conf

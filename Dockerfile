@@ -5,6 +5,8 @@ RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY prisma ./prisma
+COPY tsconfig.json ./
+RUN ./node_modules/.bin/prisma generate
 CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
 
 # Stage 1: Dependencies

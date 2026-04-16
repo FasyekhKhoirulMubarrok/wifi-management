@@ -10,8 +10,9 @@ export default async function PortalLoginPage({
 }: {
   searchParams: Promise<{ mac?: string; ip?: string; username?: string; "link-login"?: string }>;
 }) {
-  const sp  = await searchParams;
-  const mac = sp.mac?.toUpperCase() ?? null;
+  const sp        = await searchParams;
+  const mac       = sp.mac?.toUpperCase() ?? null;
+  const linkLogin = sp["link-login"] ?? null;
 
   // Get IP for location matching
   const hdr = await headers();
@@ -47,5 +48,5 @@ export default async function PortalLoginPage({
     }
   }
 
-  return <PortalLoginClient mac={mac} clientIp={clientIp} />;
+  return <PortalLoginClient mac={mac} clientIp={clientIp} linkLogin={linkLogin} />;
 }

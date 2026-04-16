@@ -11,13 +11,14 @@ const QrScanner = dynamic(
 );
 
 interface Props {
-  mac:      string | null;
-  clientIp: string | null;
+  mac:       string | null;
+  clientIp:  string | null;
+  linkLogin: string | null;
 }
 
 type Tab = "subscriber" | "voucher";
 
-export function PortalLoginClient({ mac, clientIp }: Props) {
+export function PortalLoginClient({ mac, clientIp, linkLogin }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("voucher");
 
@@ -47,8 +48,8 @@ export function PortalLoginClient({ mac, clientIp }: Props) {
         </div>
 
         <div className="p-6">
-          {tab === "voucher"    && <VoucherTab    mac={mac} clientIp={clientIp} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
-          {tab === "subscriber" && <SubscriberTab mac={mac} clientIp={clientIp} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
+          {tab === "voucher"    && <VoucherTab    mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
+          {tab === "subscriber" && <SubscriberTab mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
         </div>
       </div>
 
@@ -59,7 +60,7 @@ export function PortalLoginClient({ mac, clientIp }: Props) {
 
 // ─── Voucher Tab ──────────────────────────────────────────────────────────────
 
-function VoucherTab({ mac, clientIp: _clientIp, onSuccess }: { mac: string | null; clientIp: string | null; onSuccess: () => void }) {
+function VoucherTab({ mac, clientIp: _clientIp, linkLogin, onSuccess }: { mac: string | null; clientIp: string | null; linkLogin: string | null; onSuccess: () => void }) {
   const ref1 = useRef<HTMLInputElement>(null);
   const ref2 = useRef<HTMLInputElement>(null);
   const ref3 = useRef<HTMLInputElement>(null);
@@ -121,11 +122,20 @@ function VoucherTab({ mac, clientIp: _clientIp, onSuccess }: { mac: string | nul
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ code, macAddress: mac }),
       });
-      const d = await res.json() as { ok?: boolean; error?: string; code?: string };
+      const d = await res.json() as { ok?: boolean; error?: string; code?: string; voucher?: { code?: string } };
       if (!res.ok) {
         if (d.code === "BLOCKED") { window.location.href = "/portal/blocked"; return; }
         if (d.code === "EXPIRED") { window.location.href = "/portal/expired"; return; }
         setError(d.error ?? "Aktivasi gagal");
+        return;
+      }
+      // Tell MikroTik about the authenticated user so it can grant internet access
+      if (linkLogin && d.voucher?.code) {
+        const voucherCode = d.voucher.code;
+        const url = new URL(linkLogin);
+        url.searchParams.set("username", voucherCode);
+        url.searchParams.set("password", voucherCode);
+        window.location.href = url.toString();
         return;
       }
       onSuccess();
@@ -189,7 +199,7 @@ function VoucherTab({ mac, clientIp: _clientIp, onSuccess }: { mac: string | nul
 
 // ─── Subscriber Tab ───────────────────────────────────────────────────────────
 
-function SubscriberTab({ mac, clientIp: _clientIp, onSuccess }: { mac: string | null; clientIp: string | null; onSuccess: () => void }) {
+function SubscriberTab({ mac, clientIp: _clientIp, linkLogin, onSuccess }: { mac: string | null; clientIp: string | null; linkLogin: string | null; onSuccess: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState("");
@@ -212,6 +222,14 @@ function SubscriberTab({ mac, clientIp: _clientIp, onSuccess }: { mac: string | 
         if (d.code === "BLOCKED") { window.location.href = "/portal/blocked"; return; }
         if (d.code === "EXPIRED") { window.location.href = "/portal/expired"; return; }
         setError(d.error ?? "Login gagal");
+        return;
+      }
+      // Tell MikroTik about the authenticated user so it can grant internet access
+      if (linkLogin) {
+        const url = new URL(linkLogin);
+        url.searchParams.set("username", username.trim());
+        url.searchParams.set("password", password);
+        window.location.href = url.toString();
         return;
       }
       onSuccess();

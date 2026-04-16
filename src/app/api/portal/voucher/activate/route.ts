@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession } from "@/lib/jwt";
 import { getClientIP } from "@/lib/auth";
+import { addRadiusUser } from "@/lib/radius";
 
 /**
  * POST /api/portal/voucher/activate
@@ -74,6 +75,13 @@ export async function POST(request: NextRequest) {
           `voucher:${voucher.id}`, "voucher",
           { macAddress, ipAddress: getClientIP(request) },
         );
+        // Re-ensure RADIUS entry exists (e.g. after DB wipe)
+        await addRadiusUser(
+          code,
+          code,
+          voucher.package.speedDownKbps,
+          voucher.package.speedUpKbps,
+        ).catch(() => {/* already exists, ignore duplicate key */});
         return buildResponse(voucher, token);
       }
 
@@ -101,6 +109,15 @@ export async function POST(request: NextRequest) {
       `voucher:${activated.id}`, "voucher",
       { macAddress, ipAddress: getClientIP(request) },
     );
+
+    // Sync voucher to FreeRADIUS so MikroTik can authenticate via RADIUS
+    // Username = password = voucher code (standard for hotspot vouchers)
+    await addRadiusUser(
+      code,
+      code,
+      activated.package.speedDownKbps,
+      activated.package.speedUpKbps,
+    ).catch((e) => console.error("[radius] addRadiusUser failed:", e));
 
     return buildResponse(activated, token);
   } catch (err) {

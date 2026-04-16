@@ -13,6 +13,21 @@ services:
     networks:
       - fadiljaya-net
 
+  migrate:
+    build:
+      context: .
+      target: migrate
+    container_name: fadiljaya-migrate
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fadiljaya-net
+    profiles:
+      - tools
+
   freeradius:
     build:
       context: ./freeradius

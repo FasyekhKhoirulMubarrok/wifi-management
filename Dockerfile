@@ -1,3 +1,12 @@
+# Stage 0: Migrate (full node_modules, dipakai via docker compose run)
+FROM node:22-alpine AS migrate
+WORKDIR /app
+RUN apk add --no-cache libc6-compat
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY prisma ./prisma
+CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
+
 # Stage 1: Dependencies
 FROM node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat

@@ -1,6 +1,0 @@
-# PAP — Password Authentication Protocol
-# Handles Cleartext-Password stored in radcheck.
-
-pap {
-    normalise = yes
-}

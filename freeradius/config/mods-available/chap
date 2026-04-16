@@ -1,4 +1,0 @@
-# CHAP — Challenge Handshake Authentication Protocol
-chap {
-    auth_type = CHAP
-}

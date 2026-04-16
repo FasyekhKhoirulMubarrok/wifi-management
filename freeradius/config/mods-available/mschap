@@ -1,8 +1,0 @@
-# MS-CHAP — Microsoft CHAP v1 and v2
-mschap {
-    auth_type = MS-CHAP
-    use_mppe  = yes
-    require_encryption = yes
-    require_strong = yes
-    with_ntdomain_hack = no
-}

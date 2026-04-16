@@ -68,8 +68,9 @@ function VoucherTab({ mac, clientIp: _clientIp, linkLogin, onSuccess }: { mac: s
   const [part1, setPart1] = useState("");
   const [part2, setPart2] = useState("");
   const [part3, setPart3] = useState("");
-  const [error, setError]   = useState("");
+  const [error,   setError]   = useState("");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [showQr,  setShowQr]  = useState(false);
 
   function handlePart(
@@ -129,14 +130,20 @@ function VoucherTab({ mac, clientIp: _clientIp, linkLogin, onSuccess }: { mac: s
         setError(d.error ?? "Aktivasi gagal");
         return;
       }
+      // Tampilkan feedback berhasil dulu sebelum redirect
+      setSuccess(true);
+      await new Promise((r) => setTimeout(r, 1500));
       // Tell MikroTik about the authenticated user so it can grant internet access
       if (linkLogin && d.voucher?.code) {
-        const voucherCode = d.voucher.code;
-        const url = new URL(linkLogin);
-        url.searchParams.set("username", voucherCode);
-        url.searchParams.set("password", voucherCode);
-        window.location.href = url.toString();
-        return;
+        try {
+          const url = new URL(linkLogin);
+          url.searchParams.set("username", d.voucher.code);
+          url.searchParams.set("password", d.voucher.code);
+          window.location.href = url.toString();
+          return;
+        } catch {
+          // linkLogin bukan URL valid, lanjut ke portal status
+        }
       }
       onSuccess();
     } catch {
@@ -144,6 +151,21 @@ function VoucherTab({ mac, clientIp: _clientIp, linkLogin, onSuccess }: { mac: s
     } finally {
       setLoading(false);
     }
+  }
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 gap-3">
+        <div className="w-14 h-14 rounded-full bg-emerald-500/20 flex items-center justify-center">
+          <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p className="text-emerald-400 font-semibold text-sm">Voucher aktif!</p>
+        <p className="text-slate-400 text-xs">Menghubungkan ke internet...</p>
+        <Spinner />
+      </div>
+    );
   }
 
   return (
@@ -309,6 +331,10 @@ const VoucherInput = ({
     value={value}
     onChange={(e) => onChange(e.target.value)}
     onKeyDown={onKeyDown}
+    autoComplete="off"
+    autoCorrect="off"
+    autoCapitalize="characters"
+    spellCheck={false}
     className="w-16 h-12 text-center font-mono font-bold text-base uppercase bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 tracking-widest"
   />
 );

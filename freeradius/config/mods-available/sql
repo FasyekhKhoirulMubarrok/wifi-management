@@ -14,8 +14,9 @@ sql {
 
     radius_db = "fadiljaya_net"
 
-    # If true, (re)connect to the database before each query.
-    # Keep false for connection pooling.
+    # Map User-Name ke SQL-User-Name untuk query
+    sql_user_name = "%{User-Name}"
+
     open_query = "SET NAMES utf8mb4"
 
     # ──────────────────────────────────────────────

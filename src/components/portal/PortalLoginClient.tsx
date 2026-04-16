@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Wifi, QrCode, User, KeyRound } from "lucide-react";
 
@@ -19,7 +18,6 @@ interface Props {
 type Tab = "subscriber" | "voucher";
 
 export function PortalLoginClient({ mac, clientIp, linkLogin }: Props) {
-  const router = useRouter();
   const [tab, setTab] = useState<Tab>("voucher");
 
   return (
@@ -48,8 +46,8 @@ export function PortalLoginClient({ mac, clientIp, linkLogin }: Props) {
         </div>
 
         <div className="p-6">
-          {tab === "voucher"    && <VoucherTab    mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
-          {tab === "subscriber" && <SubscriberTab mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { router.push("/portal/status"); router.refresh(); }} />}
+          {tab === "voucher"    && <VoucherTab    mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { window.location.href = "/portal/status"; }} />}
+          {tab === "subscriber" && <SubscriberTab mac={mac} clientIp={clientIp} linkLogin={linkLogin} onSuccess={() => { window.location.href = "/portal/status"; }} />}
         </div>
       </div>
 

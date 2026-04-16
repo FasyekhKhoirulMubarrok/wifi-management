@@ -65,6 +65,10 @@ server default {
             mschap
         }
 
+        Auth-Type EAP {
+            eap
+        }
+
     } # end authenticate
 
     # ──────────────────────────────────────────────────────────────

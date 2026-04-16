@@ -35,42 +35,15 @@ server default {
     # ──────────────────────────────────────────────────────────────
     authorize {
 
-        # Normalisasi username (strip domain, lowercase)
         filter_username
-
-        # Cek preprocess (huntgroups, hints)
         preprocess
-
-        # Cek expiration dari radcheck
         expiration
-
-        # Cek time-of-day dari radcheck
         logintime
 
-        # Ambil data user dari MySQL (radcheck, radreply, radusergroup)
+        # Ambil Cleartext-Password dari MySQL
         sql
 
-        # Cek simultaneous-use
-        # Jika sudah ada sesi aktif di radacct → reject
-        if (&SQL-User-Name) {
-            simultaneous_use {
-                # Hanya izinkan 1 sesi aktif per user
-                simul_max = 1
-
-                # Pesan reject jika sesi ke-2 terdeteksi
-                reject_message = "Akun sedang digunakan di perangkat lain"
-            }
-        }
-
-        # Set auth type PAP jika user memiliki Cleartext-Password
-        if (!&control:Auth-Type) {
-            if (&control:Cleartext-Password) {
-                update control {
-                    Auth-Type := PAP
-                }
-            }
-        }
-
+        # Set Auth-Type PAP otomatis jika ada Cleartext-Password
         pap
 
     } # end authorize

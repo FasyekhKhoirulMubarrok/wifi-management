@@ -48,8 +48,5 @@ export default async function PortalLoginPage({
     }
   }
 
-  // DEBUG — hapus setelah selesai diagnosa
-  console.log("[portal/login] linkLogin:", linkLogin, "mac:", mac);
-
   return <PortalLoginClient mac={mac} clientIp={clientIp} linkLogin={linkLogin} />;
 }

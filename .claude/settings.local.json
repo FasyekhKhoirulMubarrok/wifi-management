@@ -8,7 +8,8 @@
       "Bash(timeout 12 npm run dev)",
       "Bash(npm install:*)",
       "Bash(npm list:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(docker exec *)"
     ]
   }
 }

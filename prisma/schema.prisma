@@ -96,7 +96,7 @@ model Location {
   id           Int      @id @default(autoincrement())
   name         String   @db.VarChar(100)
   address      String?  @db.Text
-  mikrotikIp   String   @map("mikrotik_ip") @db.VarChar(15)
+  mikrotikIp   String   @map("mikrotik_ip") @db.VarChar(253)
   mikrotikUser String   @map("mikrotik_user") @db.VarChar(50)
   mikrotikPass String   @map("mikrotik_pass") @db.VarChar(100)
   isActive     Boolean  @default(true) @map("is_active")
